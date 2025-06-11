@@ -1,1 +1,1 @@
-# Metal_Music
+This  a side project of mine, where I hope to develop and publish a website dediated to Metal Music, which allows users to get read, add to an encyclopedia. Hoping to drawe up a 'family tree'.
