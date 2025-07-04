@@ -46,8 +46,8 @@
               <thead>
                 <tr>
                 <th>Genre Name</th>
-                <th>Date Of Origin</th>
-                <th>Date Of Origin</th>
+                <th>Month Of Origin</th>
+                <th>Year Of Origin</th>
                 <th>Places of Origin</th>
                 <th>Notable Bands</th>
                 <th>Comments</th>

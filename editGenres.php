@@ -9,6 +9,8 @@ $monthV = '';
 $yearV = '';
 $place_of_origin= [];
 $notable_bands= [];
+$comments= "";
+
 
 # If update button is clicked to load existing data
 if (!empty($_POST['genre_name']) && isset($_POST['load'])) {
@@ -22,6 +24,7 @@ if (!empty($_POST['genre_name']) && isset($_POST['load'])) {
         $yearV = $row["yearV"];
         $place_of_origin = explode(',', $row['place_of_origin']);
         $notable_bands = explode(',', $row['notable_bands']);
+        $comments = htmlspecialchars($row['comments']); 
     } else {
         echo "Genre not found.";
     }
@@ -34,14 +37,16 @@ if (isset($_POST['submit'])) {
     $yearV = $_POST['yearV'];
     $place_of_origin = $_POST['place_of_origin']; // array
     $place_of_origin_str = implode(', ', array_map('trim', $place_of_origin));
-
     $notable_bands = $_POST['notable_bands']; // array
     $notable_bands_str = implode(', ', array_map('trim', $notable_bands));
+    $comments = $_POST['comments']; 
 
 
-     $stmt = $conn->prepare("UPDATE genres SET monthV = ?, yearV = ?, place_of_origin = ?, notable_bands = ? WHERE genre_name = ?");
+     $stmt = $conn->prepare("UPDATE genres SET monthV = ?, yearV = ?, place_of_origin = ?, notable_bands = ?, comments =? WHERE genre_name = ?");
 
-     $stmt->bind_param("sssss", $monthV, $yearV, $place_of_origin_str, $notable_bands_str, $genre_name);
+     $stmt->bind_param("ssssss", $monthV, $yearV, $place_of_origin_str, $notable_bands_str, $comments, $genre_name);
+
+
 
     if ($stmt->execute()) {
         echo "Record updated successfully!<br/>";
@@ -134,7 +139,9 @@ Notable Bands:<br>
   }
   ?>
 </div>
+  <label for="comments">comments:</label><br>
 
+    <textarea id="comments" name="comments" rows="10" cols="50"><?php echo $comments; ?></textarea>
 
 <button type="button" onclick="addNotableBands()">Add More Bands</button>
         <input type="submit" name="submit" value="Update">
