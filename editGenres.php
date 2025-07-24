@@ -1,58 +1,76 @@
 <?php
-# Include script to make a database connection
-include("database.php");
+include("connect.php");
 include("menuBar.html");
 
 # Initialize variables
-$genre_name = '';
-$monthV = '';
-$yearV = '';
-$place_of_origin= [];
-$notable_bands= [];
-$comments= "";
+$genreName = '';
+$monthOfYear = '';
+$yearOfOrigin = '';
+$placeOfOrigin = [];
+$artistName = [];
+$comments = "";
 
+// Handle update submission
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submit'])) {
+    $genreId      = intval($_POST['genreId']);
+    $genreName    = trim($_POST['genreName']);
+    $monthOfYear  = $_POST['monthOfYear'];
+    $yearOfOrigin = $_POST['yearOfOrigin'];
+    $comments     = trim($_POST['comments']);
 
-# If update button is clicked to load existing data
-if (!empty($_POST['genre_name']) && isset($_POST['load'])) {
-    $genre_name = $_POST['genre_name'];
-    $query = "SELECT * FROM genres WHERE genre_name='$genre_name'";
-    $result = $conn->query($query);
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $genre_name = $row["genre_name"];
-        $monthV = $row["monthV"];
-        $yearV = $row["yearV"];
-        $place_of_origin = explode(',', $row['place_of_origin']);
-        $notable_bands = explode(',', $row['notable_bands']);
-        $comments = htmlspecialchars($row['comments']); 
+    $placeOfOrigin = $_POST['placeOfOrigin'] ?? [];
+    $artistName    = $_POST['artistName'] ?? [];
+
+    // Clean arrays
+    $cleanPlaces = array_filter(array_map(fn($v) => str_replace(',', '', trim($v)), $placeOfOrigin));
+    $cleanBands  = array_filter(array_map(fn($v) => str_replace(',', '', trim($v)), $artistName));
+
+    // Validation
+    if (
+        !empty($genreName) &&
+        !empty($monthOfYear) &&
+        !empty($yearOfOrigin) &&
+        !empty($cleanPlaces) &&
+        !empty($cleanBands)
+    ) {
+        $placeOfOrigin_str = implode(', ', $cleanPlaces);
+        $Artist_str        = implode(', ', $cleanBands);
+
+        $stmt = $conn->prepare("UPDATE genres SET genreName = ?, monthOfYear = ?, yearOfOrigin = ?, placeOfOrigin = ?, artistName = ?, comments = ? WHERE genreId = ?");
+        $stmt->bind_param("ssssssi", $genreName, $monthOfYear, $yearOfOrigin, $placeOfOrigin_str, $Artist_str, $comments, $genreId);
+
+        if ($stmt->execute()) {
+            echo "<script>
+                alert('Genre updated successfully! Rock On!!');
+                window.location.href = 'editGenres.php';
+            </script>";
+            exit;
+        } else {
+            echo "<p style='color:red;'>Error updating record: " . $stmt->error . "</p>";
+        }
+
+        $stmt->close();
     } else {
-        echo "Genre not found.";
+        echo "<p style='color:red;'>All fields must be filled. Empty Place or Band fields are not allowed.</p>";
     }
 }
 
-# If form is submitted for updating
-if (isset($_POST['submit'])) {
-    $genre_name = $_POST['genre_name'];
-    $monthV = $_POST['monthV'];
-    $yearV = $_POST['yearV'];
-    $place_of_origin = $_POST['place_of_origin']; // array
-    $place_of_origin_str = implode(', ', array_map('trim', $place_of_origin));
-    $notable_bands = $_POST['notable_bands']; // array
-    $notable_bands_str = implode(', ', array_map('trim', $notable_bands));
-    $comments = $_POST['comments']; 
+// Load existing genre data
+if (!empty($_POST['genreId']) && isset($_POST['load'])) {
+    $genreId = intval($_POST['genreId']);
+    $query   = "SELECT * FROM genres WHERE genreId=$genreId";
 
-
-     $stmt = $conn->prepare("UPDATE genres SET monthV = ?, yearV = ?, place_of_origin = ?, notable_bands = ?, comments =? WHERE genre_name = ?");
-
-     $stmt->bind_param("ssssss", $monthV, $yearV, $place_of_origin_str, $notable_bands_str, $comments, $genre_name);
-
-
-
-    if ($stmt->execute()) {
-        echo "Record updated successfully!<br/>";
-        exit;
+    $result = $conn->query($query);
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $genreName     = $row["genreName"];
+        $monthOfYear   = $row["monthOfYear"];
+        $yearOfOrigin  = $row["yearOfOrigin"];
+        $placeOfOrigin = explode(',', $row['placeOfOrigin']); // split by comma
+        $artistName    = explode(',', $row['artistName']);
+        $comments      = htmlspecialchars($row['comments']); // escape HTML
     } else {
-        echo "Error updating record: " . $stmt->error;
+        echo "Genre not found.";
     }
 }
 ?>
@@ -61,94 +79,97 @@ if (isset($_POST['submit'])) {
 <html lang="en">
 <head>
     <title>Edit Genre Details</title>
+    <script>
+        function confirmUpdate() {
+            return confirm("Are you sure you want to update this genre?");
+        }
+    </script>
 </head>
 <body>
     <h1>Form</h1>
     <p>Edit the record</p>
+
+    <?php $formVisible = isset($_POST['load']) && !empty($_POST['genreId']); ?>
+
     <form method="POST" action="editGenres.php">
-        Genre Name: <input type="text" name="genre_name" value="<?php echo htmlspecialchars($genre_name); ?>" required><br><br>
+        <input type="hidden" name="genreId" value="<?php echo htmlspecialchars($genreId ?? ''); ?>">
+
+        Select Genre:
+        <select name="genreId" required>
+            <option value="">-- Select Genre --</option>
+            <?php
+            $result = $conn->query("SELECT genreId, genreName FROM genres ORDER BY genreName ASC");
+            while ($row = $result->fetch_assoc()) {
+                $selected = (isset($_POST['genreId']) && $_POST['genreId'] == $row['genreId']) ? 'selected' : '';
+                echo "<option value=\"{$row['genreId']}\" $selected>" . htmlspecialchars($row['genreName']) . "</option>";
+            }
+            ?>
+        </select><br><br>
+
         <input type="submit" name="load" value="Load Existing Data"><br><br>
 
-       <!-- Month of Origin: <input type="text" name="monthV" value="<?php echo htmlspecialchars($monthV); ?>"><br><br>-->
+        <?php $formVisible = isset($_POST['load']) && !empty($_POST['genreId']); ?>
 
-    Month of Origin: 
-<select name="monthV">
-    <?php
-    $months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    foreach ($months as $month) {
-        $selected = ($month === $monthV) ? 'selected' : '';
-        echo "<option value=\"$month\" $selected>$month</option>";
-    }
-    ?>
-</select>
-        Year of Origin:
-    <select name="yearV">
-    <?php
-    $years = [
-        '1940', '1941', '1942', '1943', '1944', '1945', '1946', '1947', '1948', '1949',
-        '1950', '1951', '1952', '1953', '1954', '1955', '1956', '1957', '1958', '1959',
-        '1960', '1961', '1962', '1963', '1964', '1965', '1966', '1967', '1968', '1969',
-        '1970', '1971', '1972', '1973', '1974', '1975', '1976', '1977', '1978', '1979',
-        '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989',
-        '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',
-        '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009',
-        '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019',
-        '2020', '2021', '2022', '2023', '2024', '2025'
-    ];
-    foreach ($years as $year) {
-        $selectedYear = ($year === $yearV) ? 'selected' : '';
-        echo "<option value=\"$year\" $selectedYear>$year</option>";
-    }
-    ?>
- </select>
+        <div id="formFields" style="display: <?php echo $formVisible ? 'block' : 'none'; ?>;">
+            Genre Name:
+            <input type="text" name="genreName" value="<?php echo htmlspecialchars($genreName); ?>"><br><br>
 
-Place Of Origin:<br>
-<div id="place-of-origin-container">
-    <?php
-    // Show existing values or at least one empty box
-    if (!empty($place_of_origin)) {
-        foreach ($place_of_origin as $index => $value) {
-    $val = htmlspecialchars(trim($value));
-    echo "<div class='origin-entry'>
-            <input type='text' name='place_of_origin[]' value='$val'>
-            <button type='button' onclick='this.parentElement.remove()'>Remove</button>
-          </div>";
-      }
-  }
-  ?>
-</div>
+            Month of Origin:
+            <select name="monthOfYear">
+                <?php
+                foreach ([
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ] as $month) {
+                    $selected = ($month === $monthOfYear) ? 'selected' : '';
+                    echo "<option value=\"$month\" $selected>$month</option>";
+                }
+                ?>
+            </select><br><br>
 
-<button type="button" onclick="addPlaceOfOrigin()">Add More</button>
-    
+            Year of Origin:
+            <select name="yearOfOrigin">
+                <?php
+                for ($year = 1940; $year <= 2025; $year++) {
+                    $selected = ($year == $yearOfOrigin) ? 'selected' : '';
+                    echo "<option value=\"$year\" $selected>$year</option>";
+                }
+                ?>
+            </select><br><br>
 
-Notable Bands:<br>
-<div id="notable-bands-container">
-    <?php
-    // Show existing values or at least one empty box
-    if (!empty($notable_bands)) {
-        foreach ($notable_bands as $index => $value) {
-    $val = htmlspecialchars(trim($value));
-    echo "<div class='origin-entry'>
-            <input type='text' name='notable_bands[]' value='$val'>
-            <button type='button' onclick='this.parentElement.remove()'>Remove</button>
-          </div>";
-      }
-  }
-  ?>
-</div>
-  <label for="comments">comments:</label><br>
+            Place of Origin:
+            <div id="placeOfOrigin">
+                <?php foreach ($placeOfOrigin as $val): ?>
+                    <div class="form-group origin-entry">
+                        <input type="text" name="placeOfOrigin[]" value="<?= htmlspecialchars(trim($val)) ?>" class="form-control" required>
+                        <button type="button" class="remove-btn">Remove</button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div>
+                <button type="button" onclick="addNewLocation()">Add Place of Origin</button>
+            </div>
+            <br>
 
-    <textarea id="comments" name="comments" rows="10" cols="50"><?php echo $comments; ?></textarea>
+            Notable Bands:
+            <div id="artistName">
+                <?php foreach ($artistName as $val): ?>
+                    <div class="form-group origin-entry">
+                        <input type="text" name="artistName[]" value="<?= htmlspecialchars(trim($val)) ?>" class="form-control" required>
+                        <button type="button" class="remove-btn">Remove</button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" onclick="addArtist()">Add More Artist</button>
+            <br><br>
 
-<button type="button" onclick="addNotableBands()">Add More Bands</button>
-        <input type="submit" name="submit" value="Update">
+            <label for="comments">Comments:</label><br>
+            <textarea id="comments" name="comments" rows="10" cols="50"><?php echo htmlspecialchars($comments); ?></textarea><br><br>
+
+            <input type="submit" name="submit" value="Update" onclick="return confirmUpdate();">
+        </div>
     </form>
 
-    <!-- Link to external JavaScript file -->
-<script src="mainJS.js"></script>
-
+    <script src="editGenres.js"></script>
 </body>
 </html>
