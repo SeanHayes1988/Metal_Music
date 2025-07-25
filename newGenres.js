@@ -1,44 +1,55 @@
+//Create genre javascript
 document.addEventListener("DOMContentLoaded", function () {
-    // Add a new place of origin text box
+    // Function to add new location input field - Add a new place of origin text box
     window.addNewLocation = function () {
-        const container = document.getElementById('placeOfOrigin');
-        const wrapper = document.createElement('div');
+        var container = document.getElementById('placeOfOrigin');
+        var wrapper = document.createElement('div');
         wrapper.className = 'form-group';
+        
+        // Creating the HTML structure for new place input
         wrapper.innerHTML = `
             <input type="text" name="placeOfOrigin[]" placeholder="Enter another place here..." class="form-control" required />
             <button type="button" class="remove-btn">Remove</button>
         `;
+        
         container.appendChild(wrapper);
+        //not complete?
     };
 
-    // Add a new notable bands text box
+    // Adding new artist texfield - same as above but for artists
     window.addArtist = function () {
-        const container = document.getElementById('artistName');
-        const wrapper = document.createElement('div');
-        wrapper.className = 'form-group';
-        wrapper.innerHTML = `
+        var artistContainer = document.getElementById('artistName'); 
+        var newWrapper = document.createElement('div'); 
+        newWrapper.className = 'form-group';
+        
+        newWrapper.innerHTML = `
             <input type="text" name="artistName[]" placeholder="Enter another artist..." class="form-control" required />
             <button type="button" class="remove-btn">Remove</button>
         `;
-        container.appendChild(wrapper);
+        
+        artistContainer.appendChild(newWrapper);
     };
 
-    // Remove functionality for any .remove-btn
-    document.body.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-btn')) {
-            const group = e.target.closest('.form-group');
-            const container = e.target.closest('#placeOfOrigin, #artistName, #artists');
+    // Event delegation for remove buttons - this handles all remove clicks
+    document.body.addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-btn')) {
+            var formGroup = event.target.closest('.form-group');
+            var parentContainer = event.target.closest('#placeOfOrigin, #artistName, #artists');
 
-            if (container && container.id === 'artists') {
-                const groups = container.querySelectorAll('.form-group');
-                if (groups.length > 1) {
-                    group.remove();
+            // Special handling for artists section - need at least one
+            if (parentContainer && parentContainer.id === 'artists') {
+                var allGroups = parentContainer.querySelectorAll('.form-group');
+                
+                if (allGroups.length > 1) {
+                    formGroup.remove();  // Safe to remove
                 } else {
                     alert('At least one artist must be added to the list!');
                 }
             } else {
-                group.remove(); // Remove normally for other sections
+                // For places of origin, just remove it directly
+                formGroup.remove();
             }
         }
     });
+    //TO DO testing and probably do 
 });
