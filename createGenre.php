@@ -25,7 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
         $artistName      = implode(', ', $cleanUpArtistsArray);
 
         // Check if genre already exists (case insensitive)
-        $checkGenre = $conn->prepare("SELECT genreName FROM genres WHERE LOWER(genreName) = LOWER(?)");//prepare() makes sure user cannot accidentally editing the stucture of the data 
+        $checkGenre = $conn->prepare("SELECT genreName FROM genres WHERE genreName = ?");//prepare() makes sure user cannot accidentally editing the stucture of the data 
         $checkGenre->bind_param("s", $genreName);//binds values to the placeholders in this  case ?
         $checkGenre->execute();
         $checkGenre->store_result();// stores entered data to check later onn 
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
             }
             $query->close();
 
-            $genreInserted = true;// now genere value is set to true 
+            $genreInserted = true;// now genre is now successfully changed to true
             $submittedGenre = htmlspecialchars($genreName);
 
             // Insert unique places of origin
@@ -56,9 +56,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
                 $checkPlace = $conn->prepare("SELECT placeOfOrigin FROM placeOfOrigin WHERE placeOfOrigin = ?");
                 $checkPlace->bind_param("s", $place);
                 $checkPlace->execute();
-                $checkPlace->store_result();
+                $checkPlace->get_result();
 
-                if ($checkPlace->num_rows === 0) {
+                if ($checkPlace->num_rows == 0) {
                     $insertPlace = $conn->prepare("INSERT INTO placeOfOrigin (placeOfOrigin) VALUES (?)");
                     $insertPlace->bind_param("s", $place);
                     $insertPlace->execute();
@@ -72,15 +72,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
                 $checkArtist = $conn->prepare("SELECT artistName FROM artists WHERE artistName = ?");
                 $checkArtist->bind_param("s", $artist);
                 $checkArtist->execute();
-                $checkArtist->store_result();
+                $checkArtist->get_result();
 
-                if ($checkArtist->num_rows === 0) {
+                if ($checkArtist->num_rows == 0) {
                     $insertArtist = $conn->prepare("INSERT INTO artists (artistName) VALUES (?)");
                     $insertArtist->bind_param("s", $artist);
                     $insertArtist->execute();
                     $insertArtist->close();
                 }
                 $checkArtist->close();
+
+                // TODO: more testing
             }
         }
     }
