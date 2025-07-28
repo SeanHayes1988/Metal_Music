@@ -31,23 +31,23 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // Event delegation for remove buttons - this handles all remove clicks
-    document.body.addEventListener('click', function (event) {
+    document.body.addEventListener('click', function (e) {
         if (event.target.classList.contains('remove-btn')) {
-            var formGroup = event.target.closest('.form-group');
-            var parentContainer = event.target.closest('#placeOfOrigin, #artistName, #artists');
+            var groupDiv = e.target.closest('.form-group');
+            var container = e.target.closest('#placeOfOrigin, #artistName, #artists');
 
             // Special handling for artists section - need at least one
-            if (parentContainer && parentContainer.id === 'artists') {
-                var allGroups = parentContainer.querySelectorAll('.form-group');
+            if (container && container.id .id == 'artists') {
+                var artistGroup = container.querySelectorAll('.form-group');
                 
-                if (allGroups.length > 1) {
-                    formGroup.remove();  // Safe to remove
+                if (artistGroups.length > 1) {
+                    groupDiv.remove();  // Safe to remove
                 } else {
                     alert('At least one artist must be added to the list!');
                 }
             } else {
                 // For places of origin, just remove it directly
-                formGroup.remove();
+                groupDiv.remove();
             }
         }
     });

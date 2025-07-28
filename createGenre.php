@@ -52,8 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
             $submittedGenre = htmlspecialchars($genreName);
 
             // Insert unique places of origin
-            foreach ($cleanUpPlacesArray as $place) {
-                $checkPlace = $conn->prepare("SELECT placeOfOrigin FROM placeOfOrigin WHERE placeOfOrigin = ?");
+            foreach ($cleanUpPlacesArray as $place) {//using foreach loop to put into array -$place is a place holder 
+                $checkPlace = $conn->prepare("SELECT placeOfOrigin FROM placeOfOrigin WHERE  placeOfOrigin = ?");
                 $checkPlace->bind_param("s", $place);
                 $checkPlace->execute();
                 $checkPlace->get_result();
@@ -167,6 +167,6 @@ function confirmSubmit() {
 
 
 
-<script src="newGenres.js"></script>
+<script src="createGenre.js"></script>
 </body>
 </html>
