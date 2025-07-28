@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
         
         container.appendChild(wrapper);
-        //not complete?
     };
 
     // Adding new artist texfield - same as above but for artists
@@ -30,13 +29,13 @@ document.addEventListener("DOMContentLoaded", function () {
         artistContainer.appendChild(newWrapper);
     };
 
-    // Event delegation for remove buttons - this handles all remove clicks
+    //Remove buttons event handler  - this handles all remove clicks
     document.body.addEventListener('click', function (e) {
         if (event.target.classList.contains('remove-btn')) {
             var groupDiv = e.target.closest('.form-group');
             var container = e.target.closest('#placeOfOrigin, #artistName, #artists');
 
-            // Special handling for artists section - need at least one
+            //  handling for artists- need at least one
             if (container && container.id .id == 'artists') {
                 var artistGroup = container.querySelectorAll('.form-group');
                 

@@ -2,8 +2,8 @@
 include("connect.php");
 include("menuBar.html");
 
-$genreInserted = false; // flag no genre has been inserted 
-$submittedGenre = ''; //holds user input uintil end to see if it already exists
+$genreInserted = false; // no genre has been inserted 
+$submittedGenre = ''; //holds user input until end to see if it already exists
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get or post
     if (
@@ -18,13 +18,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
         $yearOfOrigin = $_POST['yearOfOrigin'];
         $comments     = trim($_POST['comments']);
         // goes through the array and checks all the values - trims them, replaces comas with blank space
-        $cleanUpPlacesArray  = array_map(fn($val) => str_replace(',', '', trim($val)), $_POST['placeOfOrigin']); //fn($val) - short function
-        $cleanUpArtistsArray = array_map(fn($val) => str_replace(',', '', trim($val)), $_POST['artistName']);
+        $cleanUpPlacesArray = [];
+
+        foreach ($_POST['placeOfOrigin'] as $place) {
+            $trimmedPlace = trim($place);                 
+            $removeComas = str_replace(',', '', $trimmedPlace);  
+            $cleanUpPlacesArray[] = $removeComas;           // 
+        }
+
+        $cleanUpArtistsArray = [];
+         foreach ($_POST['artistName'] as $artist) {
+            $trimmedPlace = trim($artist);                 
+            $removeComas = str_replace(',', '', $trimmedPlace);  
+            $cleanUpArtistsArray[] = $removeComas;           // 
+        }
 
         $placeOfOrigins = implode(', ', $cleanUpPlacesArray);//joins array items together
         $artistName      = implode(', ', $cleanUpArtistsArray);
 
-        // Check if genre already exists (case insensitive)
+        // Check if genre already exists
         $checkGenre = $conn->prepare("SELECT genreName FROM genres WHERE genreName = ?");//prepare() makes sure user cannot accidentally editing the stucture of the data 
         $checkGenre->bind_param("s", $genreName);//binds values to the placeholders in this  case ?
         $checkGenre->execute();
@@ -157,11 +169,18 @@ function confirmSubmit() {
 <?php if ($genreInserted): ?>
 <script>
     alert("Genre successfully created. Metal Up Your Ass!!!");
+
+    //when genre is addee to the database reset the page 
     if (window.history.replaceState) {
-        const url = new URL(window.location);
-        url.search = '';
-        window.history.replaceState(null, '', url);
-    }
+            try {
+                let currentURL = new URL(window.location.href);
+                currentURL.search = ''; 
+                window.history.replaceState(null, '', currentURL.href);
+            } catch (err) {
+                // error
+                console.warn("Couldn't clean the URL:", err);
+            }
+        }
 </script>
 <?php endif; ?>
 
