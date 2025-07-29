@@ -2,31 +2,31 @@
 document.addEventListener("DOMContentLoaded", function () {
     // Function to add new location input field - Add a new place of origin text box
     window.addNewLocation = function () {
-        var container = document.getElementById('placeOfOrigin');
-        var wrapper = document.createElement('div');
-        wrapper.className = 'form-group';
+        var locationContainer = document.getElementById('placeOfOrigin');
+        var locationWrapper = document.createElement('div');
+        locationWrapper.className = 'form-group';
         
         // Creating the HTML structure for new place input
-        wrapper.innerHTML = `
+        locationWrapper.innerHTML = `
             <input type="text" name="placeOfOrigin[]" placeholder="Enter another place here..." class="form-control" required />
             <button type="button" class="remove-btn">Remove</button>
         `;
         
-        container.appendChild(wrapper);
+        locationContainer.appendChild(locationWrapper);
     };
 
     // Adding new artist texfield - same as above but for artists
     window.addArtist = function () {
         var artistContainer = document.getElementById('artistName'); 
-        var newWrapper = document.createElement('div'); 
-        newWrapper.className = 'form-group';
+        var artistWrapper = document.createElement('div'); 
+        artistWrapper.className = 'form-group';
         
-        newWrapper.innerHTML = `
+        artistWrapper.innerHTML = `
             <input type="text" name="artistName[]" placeholder="Enter another artist..." class="form-control" required />
             <button type="button" class="remove-btn">Remove</button>
         `;
         
-        artistContainer.appendChild(newWrapper);
+        artistContainer.appendChild(artistWrapper);
     };
 
     //Remove buttons event handler  - this handles all remove clicks

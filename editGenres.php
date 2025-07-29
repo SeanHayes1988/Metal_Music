@@ -22,16 +22,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submit'])) {
     $artistName    = $_POST['artistName'] ?? [];
 
     // Clean arrays
-    $cleanPlaces = array_filter(array_map(fn($v) => str_replace(',', '', trim($v)), $placeOfOrigin));
-    $cleanBands  = array_filter(array_map(fn($v) => str_replace(',', '', trim($v)), $artistName));
+    $cleanUpPlacesArray = [];
 
+        foreach ($_POST['placeOfOrigin'] as $place) {
+            $trimmedPlace = trim($place);                 
+            $removeComas = str_replace(',', '', $trimmedPlace);  
+            $cleanUpPlacesArray[] = $removeComas;           // 
+        }
+
+        $cleanUpArtistsArray = [];
+         foreach ($_POST['artistName'] as $artist) {
+            $trimmedPlace = trim($artist);                 
+            $removeComas = str_replace(',', '', $trimmedPlace);  
+            $cleanUpArtistsArray[] = $removeComas;           // 
+        }
     // Validation
     if (
-        !empty($genreName) &&
-        !empty($monthOfYear) &&
-        !empty($yearOfOrigin) &&
-        !empty($cleanPlaces) &&
-        !empty($cleanBands)
+        !empty($genreName) && !empty($monthOfYear) && !empty($yearOfOrigin) && !empty($cleanPlaces) && !empty($cleanBands)
     ) {
         $placeOfOrigin_str = implode(', ', $cleanPlaces);
         $Artist_str        = implode(', ', $cleanBands);
