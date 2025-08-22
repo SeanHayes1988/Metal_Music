@@ -2,7 +2,6 @@
   // Include script to make a database connection
      include("connect.php");
      include("menuBar.html");
-     include("deleteGenre.php");
 ?>
 
 <!DOCTYPE html>
@@ -20,9 +19,16 @@
    <body>
       
         <?php
-         $query = "SELECT * FROM genres";
-         $result = $conn->query($query);
+        /* $query = "SELECT * FROM genres";
+         $result = $conn->query($query);*/
        
+       // new query 
+
+         $query = "SELECT genre.genreId, genre.genreName, genre.monthOfYear, genre.yearOfOrigin, places.placeOfOrigin, artist.artistName, genre.comments FROM genres genre LEFT JOIN placeOfOrigin places ON genre.placeOfOriginID = places.placeOfOriginID LEFT JOIN genreArtists genreArtist ON genre.genreId = genreArtist.genreId 
+            LEFT JOIN artists artist ON genreArtist.artistID = artist.artistID";
+
+            $result = $conn->query($query);
+
 
          if ($result->num_rows > 0) {
             echo "<table border='1'>
@@ -46,13 +52,7 @@
             "<td>", $row["placeOfOrigin"],"</td>",
             "<td>", $row["artistName"],"</td>",
             "<td>", $row["comments"],"</td>",
-
-            "<td>",
-                "<form action='index.php' method='post'>
-                 <input name='genreName' value='",$row["genreName"],"' hidden >
-                 <button type='submit' name='delete' value='delete'>Delete</button>
-                </form>",
-            "</td>",
+            "<td><a href='deleteGenre.php?id=" . $row["genreId"] . "'>Delete</a></td>",
             "</tr>";
     }
     echo  "</table>";

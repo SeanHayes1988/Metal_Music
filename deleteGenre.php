@@ -1,9 +1,11 @@
   <?php
-     # Button click to Delete
-# Check that the input fields are not empty and process the data
-if(!empty($_POST['delete']) && !empty($_POST['genre_name'])){
-    $query3 = "DELETE FROM  genres WHERE genre_name='".$_POST['genre_name']."' ";
-    if (mysqli_query($conn, $query3)) {
+  include("connect.php");
+  include("menuBar.html");
+
+if (!empty($_GET['id'])) {
+    $genreId = $_GET['id'];
+    $query = "DELETE FROM genres WHERE genreId='$genreId'";
+    if (mysqli_query($conn, $query)) {
         echo "Record deleted successfully !";
     } else {
         # Display an error message if unable to delete the record
@@ -11,3 +13,4 @@ if(!empty($_POST['delete']) && !empty($_POST['genre_name'])){
     }
 }
 ?>
+

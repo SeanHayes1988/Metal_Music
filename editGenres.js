@@ -58,9 +58,9 @@ document.addEventListener('click', function (e) {
 });
 
 // Confirmation before form submission
-window.confirmSubmit = function () {
+/*window.confirmSubmit = function () {
     return confirm("Are You Happy with all the Details?");
-};
+};*/
 
 // Run once at start to hide any extra remove buttons
 document.addEventListener('DOMContentLoaded', function () {

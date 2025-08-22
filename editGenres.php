@@ -2,6 +2,9 @@
 include("connect.php");
 include("menuBar.html");
 
+$genreInserted = false; // no genre has been inserted
+$submittedGenre = ''; //holds user input until end to see if it already exists
+
 # Initialize variables
 $genreName = '';
 $monthOfYear = '';
@@ -38,10 +41,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submit'])) {
         }
     // Validation
     if (
-        !empty($genreName) && !empty($monthOfYear) && !empty($yearOfOrigin) && !empty($cleanPlaces) && !empty($cleanBands)
+        !empty($genreName) && !empty($monthOfYear) && !empty($yearOfOrigin) && !empty($cleanUpPlacesArray ) && !empty($cleanUpArtistsArray)
     ) {
-        $placeOfOrigin_str = implode(', ', $cleanPlaces);
-        $Artist_str        = implode(', ', $cleanBands);
+        $placeOfOrigin_str = implode(', ', $cleanUpPlacesArray );
+        $Artist_str        = implode(', ', $cleanUpArtistsArray);
 
         $stmt = $conn->prepare("UPDATE genres SET genreName = ?, monthOfYear = ?, yearOfOrigin = ?, placeOfOrigin = ?, artistName = ?, comments = ? WHERE genreId = ?");
         $stmt->bind_param("ssssssi", $genreName, $monthOfYear, $yearOfOrigin, $placeOfOrigin_str, $Artist_str, $comments, $genreId);
@@ -99,11 +102,11 @@ if (!empty($_POST['genreId']) && isset($_POST['load'])) {
     <?php $formVisible = isset($_POST['load']) && !empty($_POST['genreId']); ?>
 
     <form method="POST" action="editGenres.php">
-        <input type="hidden" name="genreId" value="<?php echo htmlspecialchars($genreId ?? ''); ?>">
+        <input type="hidden" name="genreId"  value="<?php echo isset($genreId) ? htmlspecialchars($genreId) : ''; ?>"/>
 
         Select Genre:
         <select name="genreId" required>
-            <option value="">-- Select Genre --</option>
+            <option value=""> Select Genre </option>
             <?php
             $result = $conn->query("SELECT genreId, genreName FROM genres ORDER BY genreName ASC");
             while ($row = $result->fetch_assoc()) {
@@ -112,14 +115,14 @@ if (!empty($_POST['genreId']) && isset($_POST['load'])) {
             }
             ?>
         </select><br><br>
-
+        
         <input type="submit" name="load" value="Load Existing Data"><br><br>
 
         <?php $formVisible = isset($_POST['load']) && !empty($_POST['genreId']); ?>
 
         <div id="formFields" style="display: <?php echo $formVisible ? 'block' : 'none'; ?>;">
             Genre Name:
-            <input type="text" name="genreName" value="<?php echo htmlspecialchars($genreName); ?>"><br><br>
+            <input type="text" name="genreName" value="<?php echo htmlspecialchars($genreName); ?>" readonly><br><br>
 
             Month of Origin:
             <select name="monthOfYear">
@@ -173,9 +176,34 @@ if (!empty($_POST['genreId']) && isset($_POST['load'])) {
             <label for="comments">Comments:</label><br>
             <textarea id="comments" name="comments" rows="10" cols="50"><?php echo htmlspecialchars($comments); ?></textarea><br><br>
 
-            <input type="submit" name="submit" value="Update" onclick="return confirmUpdate();">
+            <input type="submit" name="submit" value="Update" onclick="return confirmSubmit();">
         </div>
     </form>
+    
+    <script>
+function confirmSubmit() {
+    return confirm("Are you sure you want to update this genre?");
+}
+</script>
+
+
+<?php if ($genreInserted): ?>
+<script>
+    alert("Genre successfully Updated. Metal Up Your Ass!!!");
+
+    //when genre is addee to the database reset the page 
+    if (window.history.replaceState) {
+            try {
+                let currentURL = new URL(window.location.href);
+                currentURL.search = ''; 
+                window.history.replaceState(null, '', currentURL.href);
+            } catch (err) {
+                // error
+                console.warn("Couldn't clean the URL:", err);
+            }
+        }
+</script>
+<?php endif; ?>
 
     <script src="editGenres.js"></script>
 </body>

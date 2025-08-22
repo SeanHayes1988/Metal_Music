@@ -36,6 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
         $placeOfOrigins = implode(', ', $cleanUpPlacesArray);//joins array items together
         $artistName      = implode(', ', $cleanUpArtistsArray);
 
+
         // Check if genre already exists
         $checkGenre = $conn->prepare("SELECT genreName FROM genres WHERE genreName = ?");//prepare() makes sure user cannot accidentally editing the stucture of the data 
         $checkGenre->bind_param("s", $genreName);//binds values to the placeholders in this  case ?
@@ -50,14 +51,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
 
             // Insert into genres
             $query = $conn->prepare(
-                "INSERT INTO genres (genreName, monthOfYear, yearOfOrigin, placeOfOrigin, artistName, comments) 
-                 VALUES (?, ?, ?, ?, ?, ?)"
+
+                "INSERT INTO genres (genreName, monthOfYear, yearOfOrigin, comments) 
+                 VALUES (?, ?, ?, ?)"
+
+               /* "INSERT INTO genres (genreName, monthOfYear, yearOfOrigin, placeOfOrigin, artistName, comments) 
+                 VALUES (?, ?, ?, ?, ?, ?)"*/
             );
-            $query->bind_param("ssisss", $genreName, $monthOfYear, $yearOfOrigin, $placeOfOrigins, $artistName, $comments);
+           // $query->bind_param("ssisss", $genreName, $monthOfYear, $yearOfOrigin, $placeOfOrigins, $artistName, $comments);
+            $query->bind_param("ssis", $genreName, $monthOfYear, $yearOfOrigin, $comments);
 
             if (!$query->execute()) {
                 die("Genre was not inserted: " . $query->error);
             }
+
+            $genreId = $conn->insertId; // new code 
             $query->close();
 
             $genreInserted = true;// now genre is now successfully changed to true
@@ -68,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
                 $checkPlace = $conn->prepare("SELECT placeOfOrigin FROM placeOfOrigin WHERE  placeOfOrigin = ?");
                 $checkPlace->bind_param("s", $place);
                 $checkPlace->execute();
-                $checkPlace->get_result();
+                $checkPlace->store_result();
 
                 if ($checkPlace->num_rows == 0) {
                     $insertPlace = $conn->prepare("INSERT INTO placeOfOrigin (placeOfOrigin) VALUES (?)");
@@ -79,23 +87,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") { //REQUEST_METHOD checks either get 
                 $checkPlace->close();
             }
 
-            // Insert unique artists
-            foreach ($cleanUpArtistsArray as $artist) {
-                $checkArtist = $conn->prepare("SELECT artistName FROM artists WHERE artistName = ?");
-                $checkArtist->bind_param("s", $artist);
-                $checkArtist->execute();
-                $checkArtist->get_result();
 
-                if ($checkArtist->num_rows == 0) {
-                    $insertArtist = $conn->prepare("INSERT INTO artists (artistName) VALUES (?)");
-                    $insertArtist->bind_param("s", $artist);
-                    $insertArtist->execute();
-                    $insertArtist->close();
-                }
-                $checkArtist->close();
+foreach ($cleanUpArtistsArray as $artist) {
+    // Check if artist exists
+    $checkArtist = $conn->prepare("SELECT artistID FROM artists WHERE artistName = ?");
+    $checkArtist->bind_param("s", $artist);
+    $checkArtist->execute();
+    $checkArtist->store_result();
+
+    if ($checkArtist->num_rows == 0) {
+        // Insert new artist
+        $insertArtist = $conn->prepare("INSERT INTO artists (artistName) VALUES (?)");
+        $insertArtist->bind_param("s", $artist);
+        $insertArtist->execute();
+        $artistId = $insertArtist->insertId;
+        $insertArtist->close();
+    } else {
+        // Artist exists, fetch ID
+        $checkArtist->bind_result($artistId);
+        $checkArtist->fetch();
+    }
+    $checkArtist->close();
+
+    // Link genre to artist
+    $linkArtist = $conn->prepare("INSERT INTO genre_artists (genreId, artistID) VALUES (?, ?)");
+    $linkArtist->bind_param("ii", $genreId, $artistId);
+    $linkArtist->execute();
+    $linkArtist->close();
+}
+
+
+
+////// new code 
+
 
                 // TODO: more testing
-            }
+
+
+
+            
         }
     }
 }
