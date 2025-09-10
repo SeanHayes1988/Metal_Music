@@ -2,85 +2,107 @@
 include("connect.php");
 include("menuBar.html");
 
-$genreInserted = false; // no genre has been inserted
-$submittedGenre = ''; //holds user input until end to see if it already exists
-
-# Initialize variables
+// Initialize variables
+$genreId = '';
 $genreName = '';
-$monthOfYear = '';
+$monthOfYear ='';
 $yearOfOrigin = '';
-$placeOfOrigin = [];
+$comments = '';
+$placeOfOrigin ='';
 $artistName = [];
-$comments = "";
+$formVisible = false;
+$genreInserted = false; // initialize to false
 
-// Handle update submission
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submit'])) {
-    $genreId      = intval($_POST['genreId']);
-    $genreName    = trim($_POST['genreName']);
-    $monthOfYear  = $_POST['monthOfYear'];
-    $yearOfOrigin = $_POST['yearOfOrigin'];
-    $comments     = trim($_POST['comments']);
+// Handle "Load Existing Data"
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['load']) && !empty($_POST['genreId'])) {
+    $genreId = intval($_POST['genreId']);
+    $formVisible = true;
 
-    $placeOfOrigin = $_POST['placeOfOrigin'] ?? [];
-    $artistName    = $_POST['artistName'] ?? [];
+    $query = "SELECT genre.genreId, genre.genreName, genre.monthOfYear, genre.yearOfOrigin, GROUP_CONCAT(DISTINCT place.placeOfOrigin SEPARATOR ',') AS places,GROUP_CONCAT(DISTINCT a.artistName SEPARATOR ',') 
+    AS artistNames,genre.comments FROM genres genre LEFT JOIN genrePlaces genrePlace ON genre.genreId = genrePlace.genreId LEFT JOIN placeOfOrigin place ON genrePlace.placeOfOriginID = place.placeOfOriginID
+    LEFT JOIN genreArtists genreArtist ON genre.genreId = genreArtist.genreId LEFT JOIN artists a ON genreArtist.artistID = a.artistID WHERE genre.genreId = ? GROUP BY genre.genreId";
 
-    // Clean arrays
-    $cleanUpPlacesArray = [];
+    $formInsert = $conn->prepare($query);
+    $formInsert->bind_param("i", $genreId);
+    $formInsert->execute();
+    $result = $formInsert->get_result();
 
-        foreach ($_POST['placeOfOrigin'] as $place) {
-            $trimmedPlace = trim($place);                 
-            $removeComas = str_replace(',', '', $trimmedPlace);  
-            $cleanUpPlacesArray[] = $removeComas;           // 
-        }
-
-        $cleanUpArtistsArray = [];
-         foreach ($_POST['artistName'] as $artist) {
-            $trimmedPlace = trim($artist);                 
-            $removeComas = str_replace(',', '', $trimmedPlace);  
-            $cleanUpArtistsArray[] = $removeComas;           // 
-        }
-    // Validation
-    if (
-        !empty($genreName) && !empty($monthOfYear) && !empty($yearOfOrigin) && !empty($cleanUpPlacesArray ) && !empty($cleanUpArtistsArray)
-    ) {
-        $placeOfOrigin_str = implode(', ', $cleanUpPlacesArray );
-        $Artist_str        = implode(', ', $cleanUpArtistsArray);
-
-        $stmt = $conn->prepare("UPDATE genres SET genreName = ?, monthOfYear = ?, yearOfOrigin = ?, placeOfOrigin = ?, artistName = ?, comments = ? WHERE genreId = ?");
-        $stmt->bind_param("ssssssi", $genreName, $monthOfYear, $yearOfOrigin, $placeOfOrigin_str, $Artist_str, $comments, $genreId);
-
-        if ($stmt->execute()) {
-            echo "<script>
-                alert('Genre updated successfully! Rock On!!');
-                window.location.href = 'editGenres.php';
-            </script>";
-            exit;
-        } else {
-            echo "<p style='color:red;'>Error updating record: " . $stmt->error . "</p>";
-        }
-
-        $stmt->close();
+    if ($row = $result->fetch_assoc()) {
+        $genreName = $row["genreName"];
+        $monthOfYear = $row["monthOfYear"];
+        $yearOfOrigin = $row["yearOfOrigin"];
+        $placeOfOrigin = !empty($row['places']) ? explode(',', $row['places']) : [];//splits strings into array and puts in a comma(explode)
+        $artistName = !empty($row['artistNames']) ? explode(',', $row['artistNames']) : [];
+        $comments = htmlspecialchars($row['comments']);
     } else {
-        echo "<p style='color:red;'>All fields must be filled. Empty Place or Band fields are not allowed.</p>";
+        echo "<p style='color:red;'>Genre not found.</p>";
     }
+
+    $formInsert->close();
 }
 
-// Load existing genre data
-if (!empty($_POST['genreId']) && isset($_POST['load'])) {
+// updates the data "
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['submit'])) {
     $genreId = intval($_POST['genreId']);
-    $query   = "SELECT * FROM genres WHERE genreId=$genreId";
+    $genreName = trim($_POST['genreName']);
+    $monthOfYear = $_POST['monthOfYear'];
+    $yearOfOrigin = $_POST['yearOfOrigin'];
+    $comments = trim($_POST['comments']);
+    $placeOfOrigin = $_POST['placeOfOrigin'] ?? [];
+    $artistName = $_POST['artistName'] ?? [];
+    $formVisible = true;
 
-    $result = $conn->query($query);
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        $genreName     = $row["genreName"];
-        $monthOfYear   = $row["monthOfYear"];
-        $yearOfOrigin  = $row["yearOfOrigin"];
-        $placeOfOrigin = explode(',', $row['placeOfOrigin']); // split by comma
-        $artistName    = explode(',', $row['artistName']);
-        $comments      = htmlspecialchars($row['comments']); // escape HTML
+    // Cleans up the array
+    $cleanPlaces = array_filter(array_map(function($place){ return trim(str_replace(',', '', $place)); }, $placeOfOrigin));//fiters through the array and trim off the comas and replace it with space
+    $cleanArtists = array_filter(array_map(function($artist){ return trim(str_replace(',', '', $artist)); }, $artistName));
+
+    // validating the inputs
+    if (!empty($genreName) && !empty($monthOfYear) && !empty($yearOfOrigin)
+        && !empty($cleanPlaces) && !empty($cleanArtists)) {
+
+        // Update genres table
+        $format = $conn->prepare("UPDATE genres SET monthOfYear=?, yearOfOrigin=?, comments=? WHERE genreId=?");
+        $format->bind_param("sisi", $monthOfYear, $yearOfOrigin, $comments, $genreId);
+        $format->execute();
+        $format->close();
+
+        // Update places
+        $conn->query("DELETE FROM genrePlaces WHERE genreId=$genreId");
+        foreach ($cleanPlaces as $place) {
+            $cleanPlace = $conn->prepare("INSERT INTO placeOfOrigin (placeOfOrigin) VALUES (?) ON DUPLICATE KEY UPDATE placeOfOrigin=placeOfOrigin");
+            $cleanPlace->bind_param("s", $place);
+            $cleanPlace->execute();
+            $placeId = $cleanPlace->insert_id ?: $conn->insert_id;
+            $cleanPlace->close();
+
+            $updatePlace = $conn->prepare("INSERT INTO genrePlaces (genreId, placeOfOriginID) VALUES (?, ?)");
+            $updatePlace->bind_param("ii", $genreId, $placeId);
+            $updatePlace->execute();
+            $updatePlace->close();
+        }
+
+        // Update artists
+        $conn->query("DELETE FROM genreArtists WHERE genreId=$genreId");
+        foreach ($cleanArtists as $artist) {
+            $cleanArtist = $conn->prepare("INSERT INTO artists (artistName) VALUES (?) ON DUPLICATE KEY UPDATE artistName=artistName");
+            $cleanArtist->bind_param("s", $artist);
+            $cleanArtist->execute();
+            $artistId = $cleanArtist->insert_id ?: $conn->insert_id;
+            $cleanArtist->close();
+
+            $updateArtist = $conn->prepare("INSERT INTO genreArtists (genreId, artistID) VALUES (?, ?)");
+            $updateArtist->bind_param("ii", $genreId, $artistId);
+            $updateArtist->execute();
+            $updateArtist->close();
+
+            $genreInserted = true; 
+        }
+
+        echo "<script>alert('Genre updated successfully!'); window.location.href='editGenres.php';</script>";
+        exit;
+
     } else {
-        echo "Genre not found.";
+        echo "<p style='color:red;'>All fields must be filled. Empty Place or Band fields are not allowed.</p>";
     }
 }
 ?>

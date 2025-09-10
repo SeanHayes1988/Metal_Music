@@ -1,5 +1,5 @@
 -- in order in terms of foreign keys 
-DROP TABLE IF EXISTS genreArtists, genres, placeOfOrigin, artists;
+DROP TABLE IF EXISTS genreArtists, genrePlaces, genres, placeOfOrigin, artists;
 
 CREATE TABLE placeOfOrigin (
   placeOfOriginID INT NOT NULL AUTO_INCREMENT,
@@ -17,11 +17,9 @@ CREATE TABLE genres (
   genreId INT NOT NULL AUTO_INCREMENT,
   genreName VARCHAR(50) NOT NULL,
   monthOfYear VARCHAR(13) NOT NULL,
-  yearOfOrigin INT(4) NOT NULL,
-  placeOfOriginID INT,       
+  yearOfOrigin INT(4) NOT NULL,      
   comments VARCHAR(1000),
-  PRIMARY KEY (genreId),
-  FOREIGN KEY (placeOfOriginID) REFERENCES placeOfOrigin(placeOfOriginID)
+  PRIMARY KEY (genreId)
 );
 
 -- many to many relationship 
@@ -33,6 +31,13 @@ CREATE TABLE genreArtists (
   PRIMARY KEY (genreId, artistID)
 );
 
+CREATE TABLE genrePlaces (
+    genreId INT NOT NULL,
+    placeOfOriginID INT NOT NULL,
+    PRIMARY KEY (genreId, placeOfOriginID),
+    FOREIGN KEY (genreId) REFERENCES genres(genreId),
+    FOREIGN KEY (placeOfOriginID) REFERENCES placeOfOrigin(placeOfOriginID)
+);
 -- part 2 
 
 -- Insert a place of origin

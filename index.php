@@ -19,15 +19,12 @@
    <body>
       
         <?php
-        /* $query = "SELECT * FROM genres";
-         $result = $conn->query($query);*/
-       
-       // new query 
 
-         $query = "SELECT genre.genreId, genre.genreName, genre.monthOfYear, genre.yearOfOrigin, places.placeOfOrigin, artist.artistName, genre.comments FROM genres genre LEFT JOIN placeOfOrigin places ON genre.placeOfOriginID = places.placeOfOriginID LEFT JOIN genreArtists genreArtist ON genre.genreId = genreArtist.genreId 
-            LEFT JOIN artists artist ON genreArtist.artistID = artist.artistID";
-
-            $result = $conn->query($query);
+$query = "SELECT genre.genreId, genre.genreName, genre.monthOfYear, genre.yearOfOrigin, GROUP_CONCAT(DISTINCT places.placeOfOrigin SEPARATOR ', ') AS placesOfOrigin, /*concatenates place of origin by a sperator of a coma*/
+GROUP_CONCAT(DISTINCT artist.artistName SEPARATOR ', ') AS artists, genre.comments FROM genres genre LEFT JOIN genrePlaces genrePlaces ON genre.genreId = genrePlaces.genreId /*DISTINCT ignores dulipates*/
+LEFT JOIN placeOfOrigin places ON genrePlaces.placeOfOriginID = places.placeOfOriginID LEFT JOIN genreArtists genreArtists ON genre.genreId = genreArtists.genreId LEFT JOIN artists artist ON genreArtists.artistID = 
+artist.artistID GROUP BY genre.genreId, genre.genreName, genre.monthOfYear, genre.yearOfOrigin, genre.comments ORDER BY genre.genreName ASC";
+$result = $conn->query($query);
 
 
          if ($result->num_rows > 0) {
@@ -44,17 +41,19 @@
                 </tr>
               </thead>
               ";
+
     while($row = $result->fetch_assoc()) {
-       echo "<tr",">",
-            "<td>", $row["genreName"],"</td>",
-            "<td>", $row["monthOfYear"],"</td>",
-            "<td>", $row["yearOfOrigin"],"</td>",
-            "<td>", $row["placeOfOrigin"],"</td>",
-            "<td>", $row["artistName"],"</td>",
-            "<td>", $row["comments"],"</td>",
-            "<td><a href='deleteGenre.php?id=" . $row["genreId"] . "'>Delete</a></td>",
-            "</tr>";
-    }
+   echo "<tr>",
+        "<td>", htmlspecialchars($row["genreName"]), "</td>",
+        "<td>", htmlspecialchars($row["monthOfYear"]), "</td>",
+        "<td>", htmlspecialchars($row["yearOfOrigin"]), "</td>",
+        "<td>", htmlspecialchars($row["placesOfOrigin"]), "</td>",
+        "<td>", htmlspecialchars($row["artists"]), "</td>",
+        "<td>", htmlspecialchars($row["comments"]), "</td>",
+        "<td><a href='deleteGenre.php?id=" . $row["genreId"] . "'>Delete</a></td>",
+        "</tr>";
+}
+
     echo  "</table>";
 }else {
  echo "No Genre's were Found!!!";
